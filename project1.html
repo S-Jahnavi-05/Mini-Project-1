@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcard Master Pro</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      --card-front-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      --card-back-bg: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      --text-main: #ffffff;
+      --text-sub: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 500px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      background: linear-gradient(to right, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .progress-track {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      margin-top: 5px;
+    }
+
+    /* --- THE 3D CARD CONTAINER --- */
+    .flashcard-wrapper {
+      width: 100%;
+      height: 340px;
+      perspective: 1200px;
+      cursor: pointer;
+    }
+
+    .flashcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+      border-radius: 20px;
+    }
+
+    .flashcard.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 20px;
+      padding: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-face span {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 20px;
+    }
+
+    .card-face p {
+      font-size: 1.35rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .card-front {
+      background: var(--card-front-bg);
+    }
+
+    .card-back {
+      background: var(--card-back-bg);
+      transform: rotateY(180deg);
+    }
+
+    /* --- CONTROLS & BUTTONS --- */
+    .controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button#shuffleBtn {
+      background: #7c3aed;
+    }
+    button#shuffleBtn:hover {
+      background: #6d28d9;
+    }
+
+    @keyframes shuffleVisual {
+      0% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(0.85) rotate(-5deg); opacity: 0.5; }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .shuffle-effect {
+      animation: shuffleVisual 0.4s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <h1>Full Stack Interview Prep</h1>
+      <div class="progress-track" id="progress">Card 1 of 15</div>
+    </header>
+
+    <div class="flashcard-wrapper" onclick="toggleFlip()">
+      <div class="flashcard" id="card">
+        <div class="card-face card-front">
+          <span>Question</span>
+          <p id="questionText">Loading question...</p>
+        </div>
+        <div class="card-face card-back">
+          <span>Answer</span>
+          <p id="answerText">Loading answer...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="shuffleBtn" onclick="shuffleDeck()">🔀 Shuffle</button>
+      <button onclick="navigateCard(1)">Next ➡️</button>
+    </div>
+  </div>
+
+  <script>
+    // 15 Comprehensive Tech & Web Development Cards
+    const defaultDeck = [
+      { q: "What is the Big O time complexity of searching a sorted array using Binary Search?", a: "O(log n)" },
+      { q: "Which CSS rule is required to hide the mirror side of an element during a 3D rotation?", a: "backface-visibility: hidden;" },
+      { q: "What array shuffling algorithm guarantees uniform, completely unbiased randomness?", a: "The Fisher-Yates (or Knuth) Shuffle Algorithm" },
+      { q: "What does DOM stand for in browser web execution models?", a: "Document Object Model" },
+      { q: "How do you pass deep, spatial 3D context positioning down to nested child elements in CSS?", a: "transform-style: preserve-3d;" },
+      { q: "What is the main functional difference between HTTP status codes 401 and 403?", a: "401 means Unauthenticated (who are you?), while 403 means Unauthorized (known identity, but no permission)." },
+      { q: "What is a closure in JavaScript?", a: "The combination of a function bundled together with references to its surrounding state (lexical environment)." },
+      { q: "What key optimization technique delays loading off-screen imagery until a user scrolls close to it?", a: "Lazy Loading" },
+      { q: "In database design, what does ACID durability stand for?", a: "Atomicity, Consistency, Isolation, Durability" },
+      { q: "What is the purpose of the 'useEffect' dependency array in React development?", a: "It dictates exactly when the side-effect logic should re-run based on specified variable state mutations." },
+      { q: "What structural method prevents cross-site scripting (XSS) when outputting user data into raw HTML?", a: "Data Sanitization / HTML Entity Encoding" },
+      { q: "What design paradigm separates a system's interface details cleanly from underlying state/database actions?", a: "MVC (Model-View-Controller)" },
+      { q: "What is the difference between '==' and '===' operators in JavaScript?", a: "== checks for value equality with type coercion, while === checks for both strict value and type equality." },
+      { q: "What does DNS stand for, and what is its core responsibility on the web?", a: "Domain Name System. It translates human-readable hostnames (example.com) into numerical IP addresses." },
+      { q: "What mechanism allows a web server to explicitly list trusted origin sources a browser is permitted to load assets from?", a: "CSP (Content Security Policy)" }
+    ];
+
+    let deck = [...defaultDeck];
+    let currentIndex = 0;
+
+    const cardEl = document.getElementById('card');
+    const questionEl = document.getElementById('questionText');
+    const answerEl = document.getElementById('answerText');
+    const progressEl = document.getElementById('progress');
+
+    function updateCard() {
+      cardEl.classList.remove('is-flipped');
+      
+      setTimeout(() => {
+        questionEl.textContent = deck[currentIndex].q;
+        answerEl.textContent = deck[currentIndex].a;
+        progressEl.textContent = `Card ${currentIndex + 1} of ${deck.length}`;
+      }, 150);
+    }
+
+    function toggleFlip() {
+      cardEl.classList.toggle('is-flipped');
+    }
+
+    function navigateCard(direction) {
+      currentIndex = (currentIndex + direction + deck.length) % deck.length;
+      updateCard();
+    }
+
+    function shuffleDeck() {
+      cardEl.classList.add('shuffle-effect');
+      
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+
+      currentIndex = 0;
+      updateCard();
+
+      setTimeout(() => {
+        cardEl.classList.remove('shuffle-effect');
+      }, 400);
+    }
+
+    // Run app on mount
+    updateCard();
+  </script>
+</body>
+</html>
